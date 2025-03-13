@@ -382,7 +382,7 @@ def repvit_m1_1(pretrained=False, num_classes = 1000, distillation=False):
 
 
 @register_model
-def repvit_m1_5(pretrained=False, num_classes = 1000, distillation=False):
+def repvit_m1_5(pretrained=False, num_classes = 1000, distillation=False, **kwargs):
     """
     Constructs a MobileNetV3-Large model
     """

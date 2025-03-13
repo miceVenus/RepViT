@@ -7,3 +7,6 @@ ignore
 *.zip
 checkpoints
 trt
+output
+logs
+keys.json
