@@ -465,10 +465,6 @@ def main(args):
         wandb.finish()
 
 def export_onnx(model, output_dir):
-    # if utils.is_main_process():
-    #     dummy_input = torch.randn(1, 3, 224, 224)
-    #     torch.onnx.export(model, dummy_input, f"{output_dir}/model.onnx")
-    #     wandb.save(f"{output_dir}/model.onnx")
     pass
 
 if __name__ == '__main__':
