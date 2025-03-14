@@ -1,3 +1,4 @@
+from outcome import Value
 import torch.nn as nn
 
 def _make_divisible(v, divisor, min_value=None):
@@ -186,20 +187,29 @@ class BN_Linear(torch.nn.Sequential):
         return m
 
 class Classfier(nn.Module):
-    def __init__(self, dim, num_classes, distillation=True):
+    def __init__(self, dim, num_classes_list, distillation=True):
         super().__init__()
-        self.classifier = BN_Linear(dim, num_classes) if num_classes > 0 else torch.nn.Identity()
+        self.tasks = len(num_classes_list)
+        assert self.tasks > 3
+        self.classifiers = {
+            'birds': BN_Linear(dim, 1500),
+            'plants': BN_Linear(dim, 4500),
+            'insects': BN_Linear(dim, 2700),
+        }
+        self.classifiers = nn.ModuleList([BN_Linear(dim, num_classes) for num_classes in num_classes_list])
         self.distillation = distillation
-        if distillation:
-            self.classifier_dist = BN_Linear(dim, num_classes) if num_classes > 0 else torch.nn.Identity()
+        # if distillation:
+        #     self.classifier_dist = BN_Linear(dim, num_classes) if num_classes > 0 else torch.nn.Identity()
 
-    def forward(self, x):
+    def forward(self, x, task_id = None):
         if self.distillation:
             x = self.classifier(x), self.classifier_dist(x)
             if not self.training:
                 x = (x[0] + x[1]) / 2
-        else:
-            x = self.classifier(x)
+        elif self.training and task_id is None:
+            raise ValueError
+        elif self.training and  task_id is not None:
+            x = self.classifiers[task_id](x)
         return x
 
     @torch.no_grad()
