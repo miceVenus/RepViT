@@ -1,4 +1,3 @@
-from outcome import Value
 import torch.nn as nn
 
 def _make_divisible(v, divisor, min_value=None):

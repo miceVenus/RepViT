@@ -42,7 +42,6 @@ class INatDataset(ImageFolder):
                             "genus" : species_category[6],
                             "species" : species_category[7],
                         }
-                print(species_name)
                 targeter[species_name] = (indexer, category)
                 indexer += 1
         self.nb_classes = len(targeter)

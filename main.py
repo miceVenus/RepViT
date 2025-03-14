@@ -21,8 +21,6 @@ from data.datasets import build_dataset
 from data.threeaugment import new_data_aug_generator
 from engine import train_one_epoch, evaluate
 from losses import DistillationLoss
-
-import model
 import utils
 
 
