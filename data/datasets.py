@@ -27,6 +27,7 @@ class INatDataset(ImageFolder):
 
         targeter = {}
         indexer = 0
+        root = os.path.join(root, 'train' if train else 'val')
         for species_class in ['birds', 'insects', 'plants']:
             species_class_dir = os.path.join(root, species_class)
             for species in os.listdir(species_class_dir):
