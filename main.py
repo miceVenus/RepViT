@@ -190,9 +190,9 @@ def main(args):
     
     utils.init_distributed_mode(args)
 
-    if utils.is_main_process() and not args.eval:
-        wandb.init(project=args.project, config=args)
-        wandb.run.log_code('model')
+    # if utils.is_main_process() and not args.eval:
+    #     wandb.init(project=args.project, config=args)
+    #     wandb.run.log_code('model')
     if args.distillation_type != 'none' and args.finetune and not args.eval:
         raise NotImplementedError(
             "Finetuning with distillation not yet supported")
@@ -447,11 +447,11 @@ def main(args):
                         **{f'test_{k}': v for k, v in test_stats.items()},
                         'epoch': epoch,
                         'n_parameters': n_parameters}
-        if utils.is_main_process():
-            wandb.log({**{f'train_{k}': v for k, v in train_stats.items()},
-                    **{f'test_{k}': v for k, v in test_stats.items()},
-                    'epoch': epoch,
-                    'max_accuracy': max_accuracy}, step=epoch)
+        # if utils.is_main_process():
+        #     wandb.log({**{f'train_{k}': v for k, v in train_stats.items()},
+        #             **{f'test_{k}': v for k, v in test_stats.items()},
+        #             'epoch': epoch,
+        #             'max_accuracy': max_accuracy}, step=epoch)
         if args.output_dir and utils.is_main_process():
             with (output_dir / "log.txt").open("a") as f:
                 f.write(json.dumps(log_stats) + "\n")
@@ -459,8 +459,8 @@ def main(args):
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
     print('Training time {}'.format(total_time_str))
-    if utils.is_main_process():
-        wandb.finish()
+    # if utils.is_main_process():
+    #     wandb.finish()
 
 def export_onnx(model, output_dir):
     # if utils.is_main_process():

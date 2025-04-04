@@ -28,34 +28,31 @@ class INatDataset(ImageFolder):
         targeter = {}
         indexer = 0
         root = os.path.join(root, 'train' if train else 'val')
-        for species_class in ['birds', 'insects', 'plants']:
-            species_class_dir = os.path.join(root, species_class)
-            for species in os.listdir(species_class_dir):
-                species_category = species.split('_')
-                species_name = species_category[-2] + ' ' + species_category[-1]
-                category = {
-                            "species_class" : species_class,
-                            "kingdom" : species_category[1],
-                            "phylum" : species_category[2],
-                            "class" : species_category[3],
-                            "order" : species_category[4],
-                            "family" : species_category[5],
-                            "genus" : species_category[6],
-                            "species" : species_category[7],
-                        }
-                targeter[species_name] = (indexer, category)
-                indexer += 1
+        species_class_dir = root
+        for species in os.listdir(species_class_dir):
+            species_category = species.split('_')
+            species_name = species_category[-2] + ' ' + species_category[-1]
+            category = {
+                        "kingdom" : species_category[1],
+                        "phylum" : species_category[2],
+                        "class" : species_category[3],
+                        "order" : species_category[4],
+                        "family" : species_category[5],
+                        "genus" : species_category[6],
+                        "species" : species_category[7],
+                    }
+            targeter[species_name] = (indexer, category)
+            indexer += 1
         self.nb_classes = len(targeter)
 
         self.samples = []
-        for species_class in ['birds', 'insects', 'plants']:
-            species_class_dir = os.path.join(root, species_class)
-            for species in os.listdir(species_class_dir):
-                species_name : str = species.split('_')[-2] + ' ' + species.split('_')[-1]
-                target_current_true, _ = targeter[species_name]
-                for elem in os.listdir(os.path.join(species_class_dir, species)):
-                    path_current = os.path.join(species_class_dir, species, elem)
-                    self.samples.append((path_current, target_current_true))
+        species_class_dir = root
+        for species in os.listdir(species_class_dir):
+            species_name : str = species.split('_')[-2] + ' ' + species.split('_')[-1]
+            target_current_true, _ = targeter[species_name]
+            for elem in os.listdir(os.path.join(species_class_dir, species)):
+                path_current = os.path.join(species_class_dir, species, elem)
+                self.samples.append((path_current, target_current_true))
         with open('keys.json', 'w', encoding='utf-8') as f:
             json.dump(targeter, f, indent=4, ensure_ascii=False)
 

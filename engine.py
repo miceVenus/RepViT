@@ -3,6 +3,7 @@ Train and eval functions used in main.py
 """
 import math
 import sys
+import random
 from typing import Iterable, Optional
 
 import torch
@@ -17,6 +18,24 @@ def set_bn_state(model):
     for m in model.modules():
         if isinstance(m, torch.nn.modules.batchnorm._BatchNorm):
             m.eval()
+
+def jigsaw_generator(images, n):
+    l = []
+    for a in range(n):
+        for b in range(n):
+            l.append([a, b])
+    block_size = 224 // n
+    rounds = n ** 2
+    random.shuffle(l)
+    jigsaws = images.clone()
+    for i in range(rounds):
+        x, y = l[i]
+        temp = jigsaws[..., 0:block_size, 0:block_size].clone()
+        jigsaws[..., 0:block_size, 0:block_size] = jigsaws[..., x * block_size:(x + 1) * block_size,
+                                                y * block_size:(y + 1) * block_size].clone()
+        jigsaws[..., x * block_size:(x + 1) * block_size, y * block_size:(y + 1) * block_size] = temp
+
+    return jigsaws
 
 def train_one_epoch(model: torch.nn.Module, criterion: DistillationLoss,
                     data_loader: Iterable, optimizer: torch.optim.Optimizer,
@@ -40,33 +59,40 @@ def train_one_epoch(model: torch.nn.Module, criterion: DistillationLoss,
         samples = samples.to(device, non_blocking=True)
         targets = targets.to(device, non_blocking=True)
 
-        if mixup_fn is not None:
-            samples, targets = mixup_fn(samples, targets)
+        partNum = 8
 
-        with torch.cuda.amp.autocast():
-            outputs = model(samples)
-            loss = criterion(samples, outputs, targets)
+        for step in range(4):
 
-        loss_value = loss.item()
+            if mixup_fn is not None and step == 0:
+                samples, targets = mixup_fn(samples, targets)
+            
+            samples = jigsaw_generator(samples, partNum)
+            partNum = partNum // 2
 
-        if not math.isfinite(loss_value):
-            print("Loss is {}, stopping training".format(loss_value))
-            sys.exit(1)
+            with torch.cuda.amp.autocast():
+                outputs = model(samples)
+                loss = criterion(samples, outputs, targets)
 
-        optimizer.zero_grad()
+            loss_value = loss.item()
 
-        # this attribute is added by timm on one optimizer (adahessian)
-        is_second_order = hasattr(
-            optimizer, 'is_second_order') and optimizer.is_second_order
-        loss_scaler(loss, optimizer, clip_grad=clip_grad, clip_mode=clip_mode,
-                    parameters=model.parameters(), create_graph=is_second_order)
+            if not math.isfinite(loss_value):
+                print("Loss is {}, stopping training".format(loss_value))
+                sys.exit(1)
 
-        torch.cuda.synchronize()
-        if model_ema is not None:
-            model_ema.update(model)
+            optimizer.zero_grad()
 
-        metric_logger.update(loss=loss_value)
-        metric_logger.update(lr=optimizer.param_groups[0]["lr"])
+            # this attribute is added by timm on one optimizer (adahessian)
+            is_second_order = hasattr(
+                optimizer, 'is_second_order') and optimizer.is_second_order
+            loss_scaler(loss, optimizer, clip_grad=clip_grad, clip_mode=clip_mode,
+                        parameters=model.parameters(), create_graph=is_second_order)
+
+            torch.cuda.synchronize()
+            if model_ema is not None and step == 3:
+                model_ema.update(model)
+
+            metric_logger.update(loss=loss_value)
+            metric_logger.update(lr=optimizer.param_groups[0]["lr"])
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()
     print("Averaged stats:", metric_logger)
